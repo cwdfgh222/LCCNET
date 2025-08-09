@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>使用者登入</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-container { background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 320px; }
+        h2 { text-align: center; color: #333; }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.5rem; color: #555; }
+        input[type="text"], input[type="password"] { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 0.75rem; background-color: #007bff; color: white; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        #message { margin-top: 1rem; text-align: center; color: green; }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <h2>使用者登入</h2>
+    <form id="loginForm">
+        <div class="form-group">
+            <label for="username">帳號</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        <div class="form-group">
+            <label for="password">密碼</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit">登入</button>
+    </form>
+    <div id="message"></div>
+</div>
+
+<script>
+    document.getElementById('loginForm').addEventListener('submit', async function(event) {
+        // 防止表單預設的提交行為 (頁面刷新)
+        event.preventDefault();
+
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const messageDiv = document.getElementById('message');
+        messageDiv.textContent = ''; // 清空先前的訊息
+
+        try {
+            // 使用 Fetch API 將資料 POST 到後端 AuthController
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password // 在真實應用中，應該使用 HTTPS
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                messageDiv.style.color = 'green';
+                messageDiv.textContent = '登入成功！';
+                console.log('取得的 Token:', result.token);
+                // 在真實應用中，會將 token 儲存起來 (例如 localStorage)
+                // localStorage.setItem('jwtToken', result.token);
+            } else {
+                messageDiv.style.color = 'red';
+                messageDiv.textContent = '登入失敗：' + (result.message || '未知錯誤');
+            }
+        } catch (error) {
+            messageDiv.style.color = 'red';
+            messageDiv.textContent = '發生錯誤，請稍後再試。';
+            console.error('Login error:', error);
+        }
+    });
+</script>
+
+</body>
+</html>

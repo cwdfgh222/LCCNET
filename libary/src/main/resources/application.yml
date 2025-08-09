@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: backend-service
+  datasource:
+    # 使用環境變數來讀取，方便 Docker Compose 注入
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:library}
+    username: ${DB_USER:root}
+    password: ${DB_PASS:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      # 應用程式啟動時，自動更新資料庫結構
+      ddl-auto: update
+    show-sql: true # 在 console 顯示執行的 SQL 語句
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: 8080

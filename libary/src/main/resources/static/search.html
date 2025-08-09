@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>書目查詢系統</title>
+    <style>
+        body { font-family: Arial, sans-serif; color: #333; padding: 1rem; }
+        .container { max-width: 960px; margin: auto; }
+        h1 { text-align: center; }
+        .search-panel { display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: center; }
+        .search-panel input { flex-grow: 1; padding: 0.5rem; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
+        .search-panel button { padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; border-radius: 4px; border: 1px solid transparent; }
+        .search-btn { background-color: #28a745; color: white; }
+        .update-btn { background-color: #dc3545; color: white; }
+        #status { margin-bottom: 1rem; padding: 0.5rem; background-color: #e2e3e5; border-radius: 4px; text-align: center; display: none; }
+        table { width: 100%; border-collapse: collapse; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #ddd; }
+        thead th { background-color: #007bff; color: white; }
+        tbody tr:nth-child(even) { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>書目查詢系統</h1>
+
+    <div class="search-panel">
+        <input type="search" id="keyword" placeholder="輸入書名關鍵字...">
+        <button id="searchBtn" class="search-btn">查詢</button>
+        <button id="updateBtn" class="update-btn">觸發更新</button>
+    </div>
+
+    <div id="status"></div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>書名</th>
+                <th>作者</th>
+                <th>ISBN</th>
+                <th>出版社</th>
+            </tr>
+        </thead>
+        <tbody id="book-results">
+            </tbody>
+    </table>
+</div>
+
+<script>
+    const keywordInput = document.getElementById('keyword');
+    const searchBtn = document.getElementById('searchBtn');
+    const updateBtn = document.getElementById('updateBtn');
+    const bookResultsBody = document.getElementById('book-results');
+    const statusDiv = document.getElementById('status');
+
+    // 渲染書本列表到表格
+    function renderBooks(books) {
+        bookResultsBody.innerHTML = ''; // 清空現有內容
+        if (!books || books.length === 0) {
+            bookResultsBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">找不到任何書目資料。</td></tr>';
+            return;
+        }
+        books.forEach(book => {
+            const row = `
+                <tr>
+                    <td>${book.id}</td>
+                    <td>${book.title || ''}</td>
+                    <td>${book.author || ''}</td>
+                    <td>${book.isbn || ''}</td>
+                    <td>${book.publisher || ''}</td>
+                </tr>
+            `;
+            bookResultsBody.innerHTML += row;
+        });
+    }
+    
+    // 顯示狀態訊息
+    function showStatus(message, isError = false) {
+        statusDiv.textContent = message;
+        statusDiv.style.color = isError ? 'red' : 'blue';
+        statusDiv.style.display = 'block';
+        setTimeout(() => { statusDiv.style.display = 'none'; }, 4000);
+    }
+
+    // 查詢書本的函式
+    async function fetchBooks() {
+        const keyword = keywordInput.value;
+        const url = keyword ? `/api/books?keyword=${encodeURIComponent(keyword)}` : '/api/books';
+        
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Network response was not ok');
+            const books = await response.json();
+            renderBooks(books);
+        } catch (error) {
+            console.error('Fetch books error:', error);
+            showStatus('查詢失敗，無法連線至後端服務。', true);
+            bookResultsBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">查詢錯誤</td></tr>`;
+        }
+    }
+
+    // 觸發更新的函式
+    async function triggerUpdate() {
+        showStatus('已發送更新請求至後端...');
+        try {
+            const response = await fetch('/api/books/update', { method: 'POST' });
+            const result = await response.json();
+            if (response.ok) {
+                showStatus(result.message || '請求已成功處理！');
+            } else {
+                throw new Error(result.message || '更新失敗');
+            }
+        } catch (error) {
+            console.error('Update error:', error);
+            showStatus('觸發更新失敗！', true);
+        }
+    }
+
+    // 綁定事件
+    searchBtn.addEventListener('click', fetchBooks);
+    keywordInput.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            fetchBooks();
+        }
+    });
+    updateBtn.addEventListener('click', triggerUpdate);
+
+    // 頁面載入時，自動執行一次查詢以顯示所有書籍
+    document.addEventListener('DOMContentLoaded', fetchBooks);
+</script>
+
+</body>
+</html>
